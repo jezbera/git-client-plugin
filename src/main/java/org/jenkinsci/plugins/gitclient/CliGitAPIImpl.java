@@ -2306,7 +2306,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
 
                     // Will activate or deactivate sparse checkout depending on the given paths
-                    sparseCheckout(sparseCheckoutPaths);
+                    sparseCheckout(sparseCheckoutPaths, lfsRemote);
 
                     EnvVars checkoutEnv = environment;
                     if (lfsRemote != null) {
@@ -2382,7 +2382,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
             }
 
-            private void sparseCheckout(@NonNull List<String> paths) throws GitException, InterruptedException {
+            private void sparseCheckout(@NonNull List<String> paths, String lfsRemote) throws GitException, InterruptedException {
 
                 boolean coreSparseCheckoutConfigEnable;
                 try {
@@ -2408,9 +2408,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
                 try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(sparseCheckoutFile.toPath()), "UTF-8"))) {
-		    for(String path : paths) {
-			writer.println(path);
-		    }
+				    StringBuilder lfsIncludePaths = new StringBuilder();
+                	for(String path : paths) {
+				    	writer.println(path);
+				    	if(lfsRemote != null) {
+				    		if(!paths.get(0).equals(path)) {
+				    			lfsIncludePaths.append(",");
+				    		}
+			            	while(path.endsWith("*")) {
+			            		path = path.substring(0, path.length()-1);
+			            	}
+			            	lfsIncludePaths.append(path);
+				    	}
+				    }
+                	if(!paths.isEmpty() && lfsRemote != null) {
+                    	launchCommand("config", "lfs.fetchinclude", "\"" + lfsIncludePaths.toString() + "\"");
+                	}
                 } catch (IOException ex){
                     throw new GitException("Could not write sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), ex);
                 }
