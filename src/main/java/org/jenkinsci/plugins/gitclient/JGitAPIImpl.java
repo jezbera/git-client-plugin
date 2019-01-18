@@ -291,6 +291,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public CheckoutCommand lfsFetchOptions(String fetchInclude, String fetchExclude) {
+                return lfsCheckoutIsNotSupported();
+            }
+
+            @Override
             public CheckoutCommand lfsCredentials(StandardCredentials lfsCredentials) {
                 return lfsCheckoutIsNotSupported();
             }

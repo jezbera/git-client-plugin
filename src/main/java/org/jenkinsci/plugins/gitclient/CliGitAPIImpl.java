@@ -2234,6 +2234,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public CheckoutCommand checkout() {
         return new CheckoutCommand() {
 
+            public String lfsFetchInclude;
+            public String lfsFetchExclude;
             public String ref;
             public String branch;
             public boolean deleteBranch;
@@ -2269,6 +2271,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public CheckoutCommand lfsRemote(String lfsRemote) {
                 this.lfsRemote = lfsRemote;
+                return this;
+            }
+
+            public CheckoutCommand lfsFetchOptions(String fetchInclude, String fetchExclude) {
+                this.lfsFetchInclude = fetchInclude;
+                this.lfsFetchExclude = fetchExclude;
                 return this;
             }
 
@@ -2408,22 +2416,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
                 try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(sparseCheckoutFile.toPath()), "UTF-8"))) {
-				    StringBuilder lfsIncludePaths = new StringBuilder();
-                	for(String path : paths) {
-				    	writer.println(path);
-				    	if(lfsRemote != null) {
-				    		if(!paths.get(0).equals(path)) {
-				    			lfsIncludePaths.append(",");
-				    		}
-			            	while(path.endsWith("*")) {
-			            		path = path.substring(0, path.length()-1);
-			            	}
-			            	lfsIncludePaths.append(path);
-				    	}
-				    }
-                	if(!paths.isEmpty() && lfsRemote != null) {
-                    	launchCommand("config", "lfs.fetchinclude", "\"" + lfsIncludePaths.toString() + "\"");
-                	}
+                    for (String path : paths) {
+                        writer.println(path);
+                    }
                 } catch (IOException ex){
                     throw new GitException("Could not write sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), ex);
                 }
@@ -2442,6 +2437,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if(deactivatingSparseCheckout) {
                     launchCommand( "config", "core.sparsecheckout", "false" );
+                }
+            }
+
+            private void setLfsFetchOptions() throws InterruptedException {
+                if (lfsFetchInclude != null && !lfsFetchInclude.isEmpty()) {
+                    launchCommand("config", "lfs.fetchinclude", lfsFetchInclude);
+                }
+                if (lfsFetchExclude != null && !lfsFetchExclude.isEmpty()) {
+                    launchCommand("config", "lfs.fetchexclude", lfsFetchExclude);
                 }
             }
         };
