@@ -2315,6 +2315,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     // Will activate or deactivate sparse checkout depending on the given paths
                     sparseCheckout(sparseCheckoutPaths, lfsRemote);
+                    setLfsFetchOptions();
 
                     EnvVars checkoutEnv = environment;
                     if (lfsRemote != null) {
